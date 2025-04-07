@@ -6,9 +6,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Only POST requests allowed' });
   }
 
-  const { conversationId, emailAddress } = req.body;
+  const { conversationId} = req.body;
 
-  if (!conversationId || !emailAddress) {
+  if (!conversationId) {
     return res.status(400).json({ error: 'Missing conversationId or emailAddress' });
   }
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: emailAddress,
+      to: process.env.EMAIL_USER,
       subject: 'Your ElevenLabs Conversation Audio',
       text: 'Attached is your conversation audio.',
       attachments: [
