@@ -1,14 +1,14 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST requests allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  const { conversationId} = req.body;
+  const { conversationId } = req.body;
 
   if (!conversationId) {
-    return res.status(400).json({ error: 'Missing conversationId or emailAddress' });
+    return res.status(400).json({ error: "Missing conversationId" });
   }
 
   const XI_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -17,21 +17,25 @@ export default async function handler(req, res) {
   try {
     // Fetch audio
     const response = await fetch(audioUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'xi-api-key': XI_API_KEY,
+        "xi-api-key": XI_API_KEY,
       },
     });
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch audio' });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to fetch audio" });
     }
 
-    const audioBuffer = await response.buffer();
+    // Use arrayBuffer() instead of buffer() and convert to Buffer
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
 
     // Setup email
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // or your SMTP provider
+      service: "gmail", // or your SMTP provider
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -41,8 +45,8 @@ export default async function handler(req, res) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
-      subject: 'Your ElevenLabs Conversation Audio',
-      text: 'Attached is your conversation audio.',
+      subject: "Your ElevenLabs Conversation Audio",
+      text: "Attached is your conversation audio.",
       attachments: [
         {
           filename: `conversation-${conversationId}.mp3`,
@@ -54,9 +58,11 @@ export default async function handler(req, res) {
     // Send email
     await transporter.sendMail(mailOptions);
 
-    return res.status(200).json({ message: 'Email sent successfully' });
+    return res.status(200).json({ message: "Email sent successfully" });
   } catch (error) {
-    console.error('Error sending email:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Error sending email:", error);
+    return res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 }
