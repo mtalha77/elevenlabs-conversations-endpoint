@@ -1,0 +1,63 @@
+import nodemailer from 'nodemailer';
+import fetch from 'node-fetch';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST requests allowed' });
+  }
+
+  const { conversationId, emailAddress } = req.body;
+
+  if (!conversationId || !emailAddress) {
+    return res.status(400).json({ error: 'Missing conversationId or emailAddress' });
+  }
+
+  const XI_API_KEY = process.env.ELEVENLABS_API_KEY;
+  const audioUrl = `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}/audio`;
+
+  try {
+    // Fetch audio
+    const response = await fetch(audioUrl, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': XI_API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch audio' });
+    }
+
+    const audioBuffer = await response.buffer();
+
+    // Setup email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // or your SMTP provider
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: emailAddress,
+      subject: 'Your ElevenLabs Conversation Audio',
+      text: 'Attached is your conversation audio.',
+      attachments: [
+        {
+          filename: `conversation-${conversationId}.mp3`,
+          content: audioBuffer,
+        },
+      ],
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
