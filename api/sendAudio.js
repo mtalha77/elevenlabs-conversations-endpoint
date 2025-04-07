@@ -116,9 +116,7 @@ export default async function handler(req, res) {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: `Rockstar AI Recent Interaction Recording - ${new Date().toLocaleString()}`,
-      text: `CALL SUMMARY:\n${transcriptSummary}\n\n` +
-            `Call Duration: ${callDuration} seconds\n` +
-            `Conversation ID: ${conversationId}\n\n` +
+      text: `Call Duration: ${callDuration} seconds\n` +
             `${transcriptText}`,
       attachments: [
         {
